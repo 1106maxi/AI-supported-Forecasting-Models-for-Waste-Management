@@ -138,22 +138,18 @@ class DataProcessor:
     
     def create_lagged_boosting_features(self, df, target_col='quantity_tons'):
         """
-        Creates time series features from datetime index.
-
-        Parameters:
+        Creates time series features including lags and lagged ratios.
+                Parameters:
             df (pd.DataFrame): DataFrame for which additional features are added.
-
-        Returns:
+            target_col (str): Column name of the target variable.
+                Returns:
             pd.DataFrame: DataFrame with additional features.
         """
-
-
-        # Ensure the DataFrame has a datetime index
+                # Ensure the DataFrame has a datetime index
         if not isinstance(df.index, pd.DatetimeIndex):
             df['date'] = pd.to_datetime(df['date'])
             df = df.set_index('date')
-
-        # Extract time-based features from the datetime index
+                # Extract time-based features from the datetime index
         df['dayofweek'] = df.index.dayofweek
         df['quarter'] = df.index.quarter
         df['month'] = df.index.month
@@ -161,19 +157,31 @@ class DataProcessor:
         df['dayofyear'] = df.index.dayofyear
         df['dayofmonth'] = df.index.day
         df['weekofyear'] = df.index.isocalendar().week  # Use isocalendar() for weekofyear
-
-        # Drop the 'date' column (no longer needed)
+                # Drop the 'date' column (no longer needed)
         if 'date' in df.columns:
             df = df.drop(columns=['date'])
-
-        # Update the waste_data attribute with the new features
+                # Create lagged features
         
+        # Create lagged features for lags 1-6 and 365
+        lags = [1, 2, 3, 4, 5, 6, 365]
+        for lag in lags:
+            df[f'lag_{lag}'] = df[target_col].shift(lag)
+
+        df = df.dropna()
+
+        # Create lagged ratio features (avoid division by zero)
+        for lag in lags:
+            df[f'lag_ratio_{lag}'] = df[target_col] / df[f'lag_{lag}']
+            df[f'lag_ratio_{lag}'] = df[f'lag_ratio_{lag}'].replace([np.inf, -np.inf], np.nan)
+
+
+
+        for lag in lags:
+            df = df.drop(f'lag_{lag}', axis = 1)
+
         
-        df[f'lag_365'] = df[target_col].shift(365)
-        df[f'lag_730'] = df[target_col].shift(730)
-
-
         return df
+
 
 
     def prepare_quantity_tons_by_company(self, company):
