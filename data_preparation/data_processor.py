@@ -13,17 +13,50 @@ class DataProcessor:
 
     # Define holidays as a class attribute
     holidays = [
-        '2022-01-01',  # Neujahr
-        '2022-12-25',  # Weihnachten
-        '2022-04-17',  # Ostern
-        '2023-01-01',  # Neujahr
-        '2023-12-25',  # Weihnachten
-        '2023-04-17',  # Ostern
-        '2024-01-01',  # Neujahr
-        '2024-12-25',  # Weihnachten
-        '2024-04-17'   # Ostern
+        '2022-01-01',  # New Year 
+        '2022-12-25',  # Christmas
+        '2022-04-17',  # Easter      
+        '2023-01-01',  # New Year
+        '2023-12-25',  # Christmas
+        '2023-04-17',  # Easter
+        '2024-01-01',  # New Year
+        '2024-12-25',  # Christmas
+        '2024-04-17'   # Easter
     ]
     holidays = pd.to_datetime(holidays)
+
+    holidays2 = [
+        '2022-01-01',  # New Year
+        '2022-12-23',  # Christmas time
+        '2022-12-24',  # Christmas time
+        '2022-12-25',  # Christmas time
+        '2022-12-26',  # Christmas time
+        '2022-12-27',  # Christmas time
+        '2022-12-28',  # Christmas time
+
+        '2023-01-01',  # New Year
+        '2023-12-23',  # Christmas time
+        '2023-12-24',  # Christmas time
+        '2023-12-25',  # Christmas time
+        '2023-12-26',  # Christmas time
+        '2023-12-27',  # Christmas time
+        '2022-12-28',  # Christmas time
+
+        '2024-01-01',  # New Year
+        '2024-12-23',  # Christmas time
+        '2024-12-24',  # Christmas time
+        '2024-12-25',  # Christmas time
+        '2024-12-26',  # Christmas time
+        '2024-12-27',  # Christmas time
+        '2022-12-28',  # Christmas time
+        
+        '2022-10-03',  # Tag der deutschen Einheit
+        '2023-10-03',  # Tag der deutschen Einheit
+        '2024-10-03',  # Tag der deutschen Einheit
+    ]
+    holidays2 = pd.to_datetime(holidays2)
+
+
 
     def __init__(self, waste_data):
         """
@@ -136,51 +169,132 @@ class DataProcessor:
 
         return df
     
-    def create_lagged_boosting_features(self, df, target_col='quantity_tons'):
+    def create_lagged_boosting_features(self, df, target_col='quantity_tons', lags=[1, 2, 3, 4, 5, 6]):
         """
-        Creates time series features including lags and lagged ratios.
-                Parameters:
-            df (pd.DataFrame): DataFrame for which additional features are added.
-            target_col (str): Column name of the target variable.
-                Returns:
-            pd.DataFrame: DataFrame with additional features.
+        Creates comprehensive time series features for strategic business forecasting.
+
+        Parameters:
+            df (pd.DataFrame): DataFrame containing historical business data
+            target_col (str): Target column for forecasting
+            lags (list): Time lag periods for creating historical reference points
+            windows (list): Rolling window sizes for trend and momentum indicators
+
+        Returns:
+            pd.DataFrame: Enhanced DataFrame with strategic forecasting features
         """
-                # Ensure the DataFrame has a datetime index
-        if not isinstance(df.index, pd.DatetimeIndex):
-            df['date'] = pd.to_datetime(df['date'])
-            df = df.set_index('date')
-                # Extract time-based features from the datetime index
-        df['dayofweek'] = df.index.dayofweek
-        df['quarter'] = df.index.quarter
-        df['month'] = df.index.month
-        df['year'] = df.index.year
-        df['dayofyear'] = df.index.dayofyear
-        df['dayofmonth'] = df.index.day
-        df['weekofyear'] = df.index.isocalendar().week  # Use isocalendar() for weekofyear
-                # Drop the 'date' column (no longer needed)
-        if 'date' in df.columns:
-            df = df.drop(columns=['date'])
-                # Create lagged features
-        
-        # Create lagged features for lags 1-6 and 365
-        lags = [1, 2, 3, 4, 5, 6, 365]
+        # Create a working copy to prevent unintended modifications
+        df_copy = df.copy()
+
+        # Standardize datetime indexing for consistent time series analysis
+        if not isinstance(df_copy.index, pd.DatetimeIndex):
+            df_copy['date'] = pd.to_datetime(df_copy['date'])
+            df_copy = df_copy.set_index('date')
+
+        # Extract calendar-based features for seasonal pattern identification
+        df_copy['dayofweek'] = df_copy.index.dayofweek
+        df_copy['quarter'] = df_copy.index.quarter
+        df_copy['month'] = df_copy.index.month
+        df_copy['year'] = df_copy.index.year
+        df_copy['dayofyear'] = df_copy.index.dayofyear
+        df_copy['dayofmonth'] = df_copy.index.day
+        df_copy['weekofyear'] = df_copy.index.isocalendar().week
+
+        # Remove redundant date column if present
+        if 'date' in df_copy.columns:
+            df_copy = df_copy.drop(columns=['date'])
+
+        # Create lagged features for historical reference points
         for lag in lags:
-            df[f'lag_{lag}'] = df[target_col].shift(lag)
+            df_copy[f'lag_{lag}'] = df_copy[target_col].shift(lag)
 
-        df = df.dropna()
+        # Generate lag ratio features using sorted lags to ensure consistent progression
+        sorted_lags = sorted(lags)
+        for i in range(len(sorted_lags)-1):
+            current_lag = sorted_lags[i]
+            next_lag = sorted_lags[i+1]
+            ratio_name = f'lag_ratio_{current_lag}_{next_lag}'
+            df_copy[ratio_name] = df_copy[f'lag_{current_lag}'] / df_copy[f'lag_{next_lag}']
+            df_copy[ratio_name] = df_copy[ratio_name].replace([np.inf, -np.inf], np.nan)
 
-        # Create lagged ratio features (avoid division by zero)
+
+        # Clean up intermediate lag columns to optimize model input
         for lag in lags:
-            df[f'lag_ratio_{lag}'] = df[target_col] / df[f'lag_{lag}']
-            df[f'lag_ratio_{lag}'] = df[f'lag_ratio_{lag}'].replace([np.inf, -np.inf], np.nan)
+            df_copy = df_copy.drop(f'lag_{lag}', axis=1)
 
+    
 
+        return df_copy
 
+    def create_lagged_boosting_features2(self, df, target_col='quantity_tons', lags=[1, 2, 3, 4, 5, 6], windows=[7, 14, 30, 90]):
+        """
+        Creates comprehensive time series features for strategic business forecasting.
+
+        Parameters:
+            df (pd.DataFrame): DataFrame containing historical business data
+            target_col (str): Target column for forecasting
+            lags (list): Time lag periods for creating historical reference points
+            windows (list): Rolling window sizes for trend and momentum indicators
+
+        Returns:
+            pd.DataFrame: Enhanced DataFrame with strategic forecasting features
+        """
+        # Create a working copy to prevent unintended modifications
+        df_copy = df.copy()
+
+        # Standardize datetime indexing for consistent time series analysis
+        if not isinstance(df_copy.index, pd.DatetimeIndex):
+            df_copy['date'] = pd.to_datetime(df_copy['date'])
+            df_copy = df_copy.set_index('date')
+
+        # Extract calendar-based features for seasonal pattern identification
+        df_copy['dayofweek'] = df_copy.index.dayofweek
+        df_copy['quarter'] = df_copy.index.quarter
+        df_copy['month'] = df_copy.index.month
+        df_copy['year'] = df_copy.index.year
+        df_copy['dayofyear'] = df_copy.index.dayofyear
+        df_copy['dayofmonth'] = df_copy.index.day
+        df_copy['weekofyear'] = df_copy.index.isocalendar().week
+
+        # Remove redundant date column if present
+        if 'date' in df_copy.columns:
+            df_copy = df_copy.drop(columns=['date'])
+
+        # Create lagged features for historical reference points
         for lag in lags:
-            df = df.drop(f'lag_{lag}', axis = 1)
+            df_copy[f'lag_{lag}'] = df_copy[target_col].shift(lag)
 
-        
-        return df
+        # Generate lag ratio features using sorted lags to ensure consistent progression
+        sorted_lags = sorted(lags)
+        for i in range(len(sorted_lags)-1):
+            current_lag = sorted_lags[i]
+            next_lag = sorted_lags[i+1]
+            ratio_name = f'lag_ratio_{current_lag}_{next_lag}'
+            df_copy[ratio_name] = df_copy[f'lag_{current_lag}'] / df_copy[f'lag_{next_lag}']
+            df_copy[ratio_name] = df_copy[ratio_name].replace([np.inf, -np.inf], np.nan)
+
+
+        # Implement adaptive trend indicators - Exponentially Weighted Moving Average (EWMA)
+        for span in windows:
+            df_copy[f'ewma_{span}d'] = df_copy[target_col].shift(1).ewm(span=span).mean()
+
+
+        # Implement acceleration indicator for short-term directional changes
+        df_copy['acceleration_1d'] = df_copy[target_col].shift(1).diff() - df_copy[target_col].shift(2).diff()
+
+        # 7-day acceleration indicator for weekly operational planning
+        df_copy['acceleration_7d'] = df_copy[target_col].shift(1).diff(7) - df_copy[target_col].shift(8).diff(7)
+
+        # 90-day acceleration indicator for quarterly strategic planning
+        df_copy['acceleration_90d'] = df_copy[target_col].shift(1).diff(90) - df_copy[target_col].shift(91).diff(90)
+
+        # Clean up intermediate lag columns to optimize model input
+        for lag in lags:
+            df_copy = df_copy.drop(f'lag_{lag}', axis=1)
+
+        # Remove rows with NA values to ensure data integrity
+        #df_copy = df_copy.dropna()
+
+        return df_copy
 
 
 
@@ -219,7 +333,7 @@ class DataProcessor:
         df['is_weekend'] = df['date'].dt.weekday.isin([5, 6]).astype(int)
 
         # Create holiday flag
-        df['is_holiday'] = df['date'].isin(self.holidays).astype(int)
+        df['is_holiday'] = df['date'].isin(self.holidays2).astype(int)
 
         # Aggregate flags
         df_flags = df[['date', 'is_weekend', 'is_holiday']].drop_duplicates().set_index('date')
