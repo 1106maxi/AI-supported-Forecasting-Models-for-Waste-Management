@@ -2,9 +2,9 @@
 
 This seminar topic focuses on developing a forecasting system for optimizing waste processing in
 waste incineration plants.
-• Prediction of arrival times, quantities, and qualities
-• Consideration of seasonal fluctuations and regional characteristics
-• Automatic detection of relevant influencing factors
+- Prediction of arrival times, quantities, and qualities
+- Consideration of seasonal fluctuations and regional characteristics
+- Automatic detection of relevant influencing factors
 The developed system should enable more efficient resource planning in disposal facilities
 and contribute to improving processing procedures. The implementation should be flexible to
 evaluate various forecasting models and examine the effects of different parameters on prediction
