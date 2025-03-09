@@ -1,35 +1,39 @@
 # AI-supported Forecasting Models for Waste Management and Resource Planning
 
-This seminar topic focuses on developing a forecasting system for optimizing waste processing in
-waste incineration plants.
-- Prediction of arrival times, quantities, and qualities
-- Consideration of seasonal fluctuations and regional characteristics
-- Automatic detection of relevant influencing factors
-The developed system should enable more efficient resource planning in disposal facilities
-and contribute to improving processing procedures. The implementation should be flexible to
-evaluate various forecasting models and examine the effects of different parameters on prediction
-accuracy. 
+This project develops a forecasting system to optimize waste processing in waste incineration plants. The system predicts arrival times, quantities, and quality scores of waste, considering seasonal fluctuations and other characteristics. It aims to enable more efficient resource planning in disposal facilities and improve processing procedures.
 
-## Notebooks
+## Project Structure
 
-### 1. `data_examination_quantity`
-This notebook provides a **descriptive analysis** of the quantity of delivered waste. By exploring trends, seasonality, and key statistics, we gain valuable insights into waste delivery patterns, which serve as the foundation for building predictive models.
+### Notebooks
+- **Data Examination Notebooks**: Explore trends, seasonality, and statistics in waste data to inform feature engineering.
+  - `quantity.ipynb`: Descriptive analysis of the quantity of delivered waste.
+  - `quality.ipynb`: Analysis of the quality scores per delivery.
+- **Forecasting Notebooks**: Develop and test forecasting models.
+  - `arrival_time.ipynb`: Forecast the arrival times of waste deliveries.
+  - `quantity_xgboost.ipynb`: Forecast waste quantities using the XGBoost algorithm.
+  - `quality_regression_test.ipynb`: Regression tests for quality score predictions.
+  - `forecasting_system.ipynb`: Integrates various forecasting models for comprehensive analysis.
+- **Implementation Tests**: Test new features and forecasting methods.
+  - `test_prediction_intervals.ipynb`
+  - `test_prophet.ipynb`
 
-**Key Highlights**:
-- Exploratory Data Analysis of waste quantity data.
-- Identification of key patterns to inform feature engineering and model development.
+### Modules
+- **Data Preparation**: Contains tools for preparing data for forecasting tasks.
+  - `data_processor.py`: Includes functions for data cleaning, preprocessing, and feature extraction.
 
----
+### Models
+- **Hyperparameter Search Results**: Contains results and configurations for various models.
+  - `hyperparameters.py`: Details of hyperparameter tuning for the XGBoost model.
 
-### 2. `forecasting_xgboost_quantity`
-This notebook focuses on **forecasting waste delivery quantities** using XGBoost, a powerful machine learning algorithm. By experimenting with different features—such as lagged variables, rolling statistics, and seasonal indicators—we aim to build accurate and interpretable models for waste management and resource planning.
+## Prerequisites
 
-**Key Highlights**:
-- Feature engineering tailored for time series data.
-- Hyperparameter tuning to optimize model performance.
-- Evaluation of forecasting accuracy and interpretation of results.
+- **Python Version**: This project was build using Python 3.12.4. Please ensure you have this version installed before setting up the project environment.
 
----
+## Installation
 
-### 3. `test`
-currently under construction 
+Clone this repository and install the required packages:
+
+```bash
+git clone https://github.com/yourusername/your-repository-name.git
+cd your-repository-name
+pip install -r requirements.txt

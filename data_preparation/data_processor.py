@@ -181,8 +181,8 @@ class DataProcessor:
         if lagged_features or lagged_ratios:
         # Columns to check for NaN values
             columns_to_check = [f'lag_{lag}' for lag in lags] if lagged_features else []
-            if lagged_ratios:
-                columns_to_check += [f'lag_ratio_{sorted_lags[i]}_{sorted_lags[i + 1]}' for i in range(len(sorted_lags) - 1)]
+            #if lagged_ratios:
+            #    columns_to_check += [f'lag_ratio_{sorted_lags[i]}_{sorted_lags[i + 1]}' for i in range(len(sorted_lags) - 1)]
         
         # Drop rows with NaN values in any of the specified columns
         df_copy = df_copy.dropna(subset=columns_to_check)
@@ -204,8 +204,78 @@ class DataProcessor:
         
         return df_copy
 
+    def arriavl_time(self, company = "", by_company = False, agg_arrival = False, agg_value = ""):
+        """
+        
+        """
+        df = self.waste_data.copy()
+        df = df.drop(["quantity_tons", "quality_score", "moisture_content", "contamination_level", "heating_value_MJ_per_kg"], axis = 1)
 
+
+        if by_company == True:
+            target_df = df[df['company'] == company].reset_index()
+            target_df = target_df.drop("index",axis = 1)
+        else:
+            target_df = df.copy()
+
+        target_df = target_df.drop(["date", "company", "waste_type", "truck_id"], axis = 1)
+        target_df["arrival"] = 1
+        
+        # create skeleton df
+        date_range = pd.date_range(start='2022-01-01', end='2024-12-31', freq='min') 
+        skeleton_df = pd.DataFrame(date_range, columns=['arrival_time'])
+
+        target_df["arrival_time"] = pd.to_datetime(target_df["arrival_time"])
+        minute_df = pd.merge(skeleton_df, target_df, on='arrival_time', how='left')
+        minute_df.fillna(0, inplace=True)
+        minute_df['season'] = minute_df['arrival_time'].apply(self.get_season)
+
+        season_dummies = pd.get_dummies(minute_df['season'], prefix='is')
+        minute_df = pd.concat([minute_df, season_dummies], axis=1)
+        minute_df['is_weekend'] = minute_df['arrival_time'].dt.weekday.isin([5, 6]).astype(int)
+        minute_df['is_holiday'] = minute_df['arrival_time'].isin(self.all_holidays).astype(int)
+        final_df = minute_df.drop("season", axis = 1)
+
+        final_df['dayofweek'] = final_df['arrival_time'].dt.dayofweek
+        final_df['quarter'] = final_df['arrival_time'].dt.quarter
+        final_df['month'] = final_df['arrival_time'].dt.month
+        final_df['year'] = final_df['arrival_time'].dt.year
+        final_df['dayofyear'] = final_df['arrival_time'].dt.dayofyear
+        final_df['dayofmonth'] = final_df['arrival_time'].dt.day
+        final_df['weekofyear'] = final_df['arrival_time'].dt.isocalendar().week 
+
+        final_df['hour'] = final_df['arrival_time'].dt.hour
+        final_df['day_of_week'] = final_df['arrival_time'].dt.dayofweek
+        final_df['month'] = final_df['arrival_time'].dt.month
     
+
+        final_df = final_df.set_index("arrival_time")
+
+        if agg_arrival == True:
+            final_df = final_df.resample(f'{agg_value}h').agg({
+
+            'is_Fall': 'max',
+            'is_Spring': 'max',
+            'is_Summer': 'max', 
+            'is_Winter': 'max',
+            'is_weekend': 'max',
+            'is_holiday': 'max',
+            "arrival": "max",
+
+            'dayofweek': 'first',
+            'quarter': 'first',
+            'month': 'first',
+            'year': 'first',
+            'dayofyear': 'first',
+            'dayofmonth': 'first',
+            'weekofyear': 'first',
+            'hour': lambda x: (x.iloc[0] // agg_value) * agg_value, 
+            'day_of_week': 'first'})
+
+        final_df = final_df.astype(np.float32)
+
+        return final_df
+
     def gru_prepare_quantity_tons_by_waste_type(self, waste_type, timesteps=7):
         """
         Prepare the data for a GRU model by creating sequences and normalizing the data.
