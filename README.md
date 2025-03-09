@@ -34,6 +34,6 @@ This project develops a forecasting system to optimize waste processing in waste
 Clone this repository and install the required packages:
 
 ```bash
-git clone https://github.com/yourusername/your-repository-name.git
-cd your-repository-name
+git clone https://github.com/1106maxi/AI-supported-Forecasting-Models-for-Waste-Management.git
+cd AI-supported-Forecasting-Models-for-Waste-Management
 pip install -r requirements.txt
