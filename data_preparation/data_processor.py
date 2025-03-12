@@ -59,16 +59,18 @@ class DataProcessor:
             return 'Fall'
 
 
-    def agg_quantity(self, company="", waste_type="", by_company=False, by_waste_type=False):
+    def agg_quantity(self, company="", waste_type="", by_company=False, by_waste_type=False, one_hot=True):
         """
         Prepare the waste data by aggregating quantities, adding seasonal flags, and handling holidays and weekends.
-
+    
         Args:
             company (str): The name of the company to filter the data for.
             waste_type (str): The type of waste to filter the data for.
             by_company (bool): Whether to filter by company.
             by_waste_type (bool): Whether to filter by waste type.
-
+            one_hot (bool): If True, season and holiday features are one-hot encoded.
+                             If False, they are kept as single categorical features with names.
+        
         Returns:
             pd.DataFrame: A DataFrame with aggregated quantities and additional flags.
         """
@@ -79,50 +81,87 @@ class DataProcessor:
             df = self.waste_data[self.waste_data['waste_type'] == waste_type].copy()
         else:
             df = self.waste_data.copy()
-
+    
         # Convert 'date' to datetime
         df['date'] = pd.to_datetime(df['date'])
-
+    
         # Group by 'date' and sum 'quantity_tons', ensuring a complete date range
         df_grouped = df.groupby(['date'])['quantity_tons'].sum().reset_index()
         df_grouped = df_grouped.set_index('date').asfreq('D', fill_value=0).reset_index()
-
-        # Add season column
+    
+        # Add season column using the helper function
         df['season'] = df['date'].apply(self.get_season)
-
-        # Drop duplicates to ensure one entry per date
-        df_unique_dates = df[['date', 'season']].drop_duplicates()
-
-        # Create binary variables for seasons
-        season_dummies = pd.get_dummies(df_unique_dates['season'], prefix='is')
-        df_season_flags = pd.concat([df_unique_dates['date'], season_dummies], axis=1)
-
-        # Create weekend & holiday flag
-        df['is_weekend'] = df['date'].dt.weekday.isin([5, 6]).astype(int)
-        df['is_holiday'] = df['date'].isin(self.all_holidays).astype(int)
-
-        # Aggregate flags
-        df_flags = df[['date', 'is_weekend', 'is_holiday']].drop_duplicates().set_index('date')
-
-        # Ensure df_flags includes all dates in the range
-        full_date_range = pd.date_range(start=df['date'].min(), end=df['date'].max(), freq='D')
-        df_flags = df_flags.reindex(full_date_range).fillna(0).reset_index().rename(columns={'index': 'date'})
-
-        # Merge flags with season flags
-        df_flags = df_flags.merge(df_season_flags, on='date', how='left')
-
-        # Fill NaN values in season flags
-        season_columns = ['is_Fall', 'is_Spring', 'is_Summer', 'is_Winter']
-        df_flags[season_columns] = df_flags[season_columns].fillna(0)
-
-        # Ensure correct data types
-        df_flags = df_flags.set_index('date')
-        df_flags = df_flags.astype(np.float32)
-
-        # Merge flags with grouped data
+    
+        if one_hot:
+            # --- ONE-HOT ENCODING ---
+            # Create one entry per date for season using one-hot encoding
+            df_unique_dates = df[['date', 'season']].drop_duplicates()
+            season_dummies = pd.get_dummies(df_unique_dates['season'], prefix='is')
+            df_season_flags = pd.concat([df_unique_dates['date'], season_dummies], axis=1)
+    
+            # Create weekend flag (binary: 1 if weekend, else 0)
+            df['is_weekend'] = df['date'].dt.weekday.isin([5, 6]).astype(int)
+            # Create holiday flag (binary: 1 if the date is in all_holidays, else 0)
+            df['is_holiday'] = df['date'].isin(self.all_holidays).astype(int)
+    
+            # Aggregate weekend and holiday flags per date
+            df_flags = df[['date', 'is_weekend', 'is_holiday']].drop_duplicates().set_index('date')
+    
+            # Ensure df_flags includes all dates in the range
+            full_date_range = pd.date_range(start=df['date'].min(), end=df['date'].max(), freq='D')
+            df_flags = df_flags.reindex(full_date_range).fillna(0).reset_index().rename(columns={'index': 'date'})
+    
+            # Merge with season one-hot flags
+            df_flags = df_flags.merge(df_season_flags, on='date', how='left')
+    
+            # Fill NaN values in season one-hot columns
+            season_columns = [col for col in df_flags.columns if col.startswith('is_')]
+            df_flags[season_columns] = df_flags[season_columns].fillna(0)
+    
+            # Ensure correct data types
+            df_flags = df_flags.set_index('date')
+            df_flags = df_flags.astype(np.float32)
+        else:
+            # --- CATEGORICAL FEATURES ---
+            # Create one entry per date with the season (as categorical) without one-hot encoding
+            df_unique_dates = df[['date', 'season']].drop_duplicates()
+    
+            # Define a helper function to get holiday names
+            def get_holiday_name(date):
+                # If date is a holiday, assign name based on month-day
+                if date in self.all_holidays:
+                    if date.strftime('%m-%d') == '01-01':
+                        return 'New Year'
+                    elif date.strftime('%m-%d') in ['12-23', '12-24', '12-25', '12-26', '12-27', '12-28']:
+                        return 'Christmas time'
+                    else:
+                        return 'Holiday'
+                else:
+                    return 'No Holiday'
+    
+            # Create a DataFrame with weekend flag and holiday name
+            df_weekend = df[['date']].drop_duplicates().copy()
+            df_weekend['is_weekend'] = df_weekend['date'].dt.weekday.isin([5, 6]).astype(int)
+            df_weekend['holiday'] = df_weekend['date'].apply(get_holiday_name)
+    
+            # Merge the season (categorical) with holiday and weekend info
+            df_flags = pd.merge(df_weekend, df_unique_dates, on='date', how='left')
+    
+            # Ensure df_flags includes all dates in the range
+            full_date_range = pd.date_range(start=df['date'].min(), end=df['date'].max(), freq='D')
+            df_flags = df_flags.set_index('date').reindex(full_date_range).reset_index().rename(columns={'index': 'date'})
+    
+            # Fill missing values for categorical features
+            df_flags['holiday'] = df_flags['holiday'].fillna('No Holiday')
+    
+            # For consistency, set the index and convert numeric types
+            df_flags = df_flags.set_index('date')
+    
+        # Merge flags with grouped data (quantities per date)
         result = pd.merge(df_flags, df_grouped, on='date', how='outer')
-
+    
         return result
+
     
     
     def create_xgboost_features(self, df, target_col='quantity_tons', lags=[1], windows=[], lagged_features=True, lagged_ratios=True, trend_indicators=False):
