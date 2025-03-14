@@ -161,10 +161,63 @@ class DataProcessor:
         result = pd.merge(df_flags, df_grouped, on='date', how='outer')
     
         return result
+    
+    def get_period_length(self, sequence, start = 0, new_period_at = 1):
+    # returns the max length for a subsequence and the position of the last max length element of the subsequence in the total sequence.
+    # subsequence must be monotonous
+        max_length = len(sequence) - 1
+        i = start
+        start_value = sequence[i]
+        current_max = start_value
+        while sequence[i] == start_value and i < max_length:
+            i += 1
+        if i == max_length:
+            current_max = sequence[i]
+            return current_max, i
+        while sequence[i] > new_period_at and i < max_length:
+            if sequence[i] > current_max:
+                current_max = sequence[i]
+            i += 1
+        if sequence[i] > current_max:
+            current_max = sequence[i]
+        return current_max, i-1
+
+
+    def trig_transform_one_value(self, value, period_length, sin = True):
+        # transforms one value with a given period length
+        if sin == True:
+            transformed_value = np.sin(2 * np.pi * value / period_length)
+        else:
+            transformed_value = np.cos(2 * np.pi * value / period_length)
+        return transformed_value
+
+
+    def cyclical_transformation(self, df, col, sin = True, start_row = 0, end_row = None, start = 0, new_period_at = 1):
+        # Transforms one col in a df to a sinusoidal or cosinudoidal function
+        df[col] = df[col].astype(float)
+        current_row = start_row
+        if end_row == None:
+            end_row = len(df)
+        col_index = df.columns.get_loc(col) 
+
+        period, last_position_in_period = self.get_period_length(df[col], start, new_period_at)
+        while current_row < end_row:
+            if current_row > last_position_in_period:
+                period, last_position_in_period = self.get_period_length(df[col], current_row, new_period_at)
+            df.iloc[current_row, col_index] = self.trig_transform_one_value(df.iloc[current_row, col_index], period, sin)
+            current_row += 1
+        return df[col]
+
+
+    def sin_cos_feature(self, df, col, start_row = 0, end_row = None, start = 1, new_period_at = 1):
+        # add a sin and cos transformed column to a dataframe 
+        df[col + "_sin"] = self.cyclical_transformation(df.copy(), col, start_row = 0, end_row = None, start = 1, new_period_at = 1)
+        df[col + "_cos"] = self.cyclical_transformation(df.copy(), col, sin = False, start_row = 0, end_row = None, start = 1, new_period_at = 1)
+        return df
 
     
     
-    def create_xgboost_features(self, df, target_col='quantity_tons', lags=[1], windows=[], lagged_features=True, lagged_ratios=True, trend_indicators=False):
+    def create_xgboost_features(self, df, target_col='quantity_tons', lags=[1], windows=[], lagged_features=True, lagged_ratios=True, trend_indicators=False, cyc_transform=None):
         """
         Creates comprehensive time series features for machine learning models, particularly XGBoost, by incorporating
         historical, seasonal, and trend-based information.  
@@ -177,7 +230,9 @@ class DataProcessor:
             lagged_features (bool): Whether to create lagged features based on the `lags` parameter. Default is True.
             lagged_ratios (bool): Whether to create ratio features between consecutive lagged values. Default is True.
             trend_indicators (bool): Whether to create trend-based features such as exponentially weighted moving averages
-                                    and acceleration indicators. Default is False.  
+                                    and acceleration indicators. Default is False.
+            cyc_transform (str): Wether to transform the individual date columns, None = no transformation [Default], "all" = adding sin and cos transformed columns,
+                                    "all replace" = replacing the original columns with sin and cos transformed cols, "{colname}" = replace the column {colname} with the transformed columns.      
 
         Returns:
             pd.DataFrame: Enhanced DataFrame with additional time series features for forecasting.
@@ -197,34 +252,45 @@ class DataProcessor:
         df_copy['year'] = df_copy.index.year
         df_copy['dayofyear'] = df_copy.index.dayofyear
         df_copy['dayofmonth'] = df_copy.index.day
-        df_copy['weekofyear'] = df_copy.index.isocalendar().week    
+        df_copy['weekofyear'] = df_copy.index.isocalendar().week 
+
+        # Create Sin/Cos transformed date values
+        if cyc_transform != None:
+            if "all" in cyc_transform:
+                df_copy = self.sin_cos_feature(df_copy, 'dayofweek')
+                df_copy = self.sin_cos_feature(df_copy, 'quarter')
+                df_copy = self.sin_cos_feature(df_copy, 'month')
+                df_copy = self.sin_cos_feature(df_copy, 'year')
+                df_copy = self.sin_cos_feature(df_copy, 'dayofyear')
+                df_copy = self.sin_cos_feature(df_copy, 'dayofmonth')
+                df_copy = self.sin_cos_feature(df_copy, 'weekofyear')
+                if "replace" in cyc_transform:
+                    df_copy = df_copy.drop(columns=['dayofweek', 'quarter', 'month', 'year', 'dayofyear', 'dayofmonth','weekofyear'])
+            else:
+                df_copy = self.sin_cos_feature(df, cyc_transform)
+                df_copy = df_copy.drop(columns=[cyc_transform])
+
 
         if 'date' in df_copy.columns:
             df_copy = df_copy.drop(columns=['date'])    
 
         # Create lagged features for historical reference points
-        for lag in lags:
-            df_copy[f'lag_{lag}'] = df_copy[target_col].shift(lag)  
+        if lag:
+            for lag in lags:
+                df_copy[f'lag_{lag}'] = df_copy[target_col].shift(lag)
 
-        # Generate lag ratio features using sorted lags to ensure consistent progression
-        if lagged_ratios == True:
-            sorted_lags = sorted(lags)
-            for i in range(len(sorted_lags)-1):
-                current_lag = sorted_lags[i]
-                next_lag = sorted_lags[i+1]
-                ratio_name = f'lag_ratio_{current_lag}_{next_lag}'
-                df_copy[ratio_name] = df_copy[f'lag_{current_lag}'] / df_copy[f'lag_{next_lag}']
-                df_copy[ratio_name] = df_copy[ratio_name].replace([np.inf, -np.inf], np.nan)    
-        
-        # Drop rows where lagged features or lagged ratios are NaN
-        if lagged_features or lagged_ratios:
-        # Columns to check for NaN values
+            # Generate lag ratio features using sorted lags to ensure consistent progression
+            if lagged_ratios == True:
+                sorted_lags = sorted(lags)
+                for i in range(len(sorted_lags)-1):
+                    current_lag = sorted_lags[i]
+                    next_lag = sorted_lags[i+1]
+                    ratio_name = f'lag_ratio_{current_lag}_{next_lag}'
+                    df_copy[ratio_name] = df_copy[f'lag_{current_lag}'] / df_copy[f'lag_{next_lag}']
+                    df_copy[ratio_name] = df_copy[ratio_name].replace([np.inf, -np.inf], np.nan)
+            # Drop rows where lagged features or lagged ratios are NaN
             columns_to_check = [f'lag_{lag}' for lag in lags] if lagged_features else []
-            #if lagged_ratios:
-            #    columns_to_check += [f'lag_ratio_{sorted_lags[i]}_{sorted_lags[i + 1]}' for i in range(len(sorted_lags) - 1)]
-        
-        # Drop rows with NaN values in any of the specified columns
-        df_copy = df_copy.dropna(subset=columns_to_check)
+            df_copy = df_copy.dropna(subset=columns_to_check)
 
         # Drop lagged features if not needed
         if lagged_features == False:
