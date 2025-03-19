@@ -1,1 +1,1 @@
-from .hyperparameters import XGBoostParams
+from .hyperparameters import XGBoostParams, CatBoostParams
