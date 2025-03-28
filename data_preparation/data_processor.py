@@ -158,11 +158,11 @@ class DataProcessor:
 
     
     
-    def create_xgboost_features(self, df, target_col='quantity_tons', lags=[1], windows=[], lagged_features=True, lagged_ratios=True, trend_indicators=False):
+    def create_xgboost_features(self, df, target_col='quantity_tons', lags=[1], windows=[], lagged_features=True, lagged_ratios=True, trend_indicators=False, fourier_terms=False, interaction_terms=False, trend_term=False):
         """
         Creates comprehensive time series features for machine learning models, particularly XGBoost, by incorporating
         historical, seasonal, and trend-based information.  
-
+    
         Args:
             df (pd.DataFrame): DataFrame containing historical time series data.
             target_col (str): The name of the target column for which features are being created. Default is 'quantity_tons'.
@@ -172,18 +172,21 @@ class DataProcessor:
             lagged_ratios (bool): Whether to create ratio features between consecutive lagged values. Default is True.
             trend_indicators (bool): Whether to create trend-based features such as exponentially weighted moving averages
                                     and acceleration indicators. Default is False.  
-
+            fourier_terms (bool): Whether to create Fourier terms for capturing cyclical patterns. Default is False.
+            interaction_terms (bool): Whether to create interaction terms between existing features. Default is False.
+            trend_term (bool): Whether to include a linear trend term. Default is False.
+    
         Returns:
             pd.DataFrame: Enhanced DataFrame with additional time series features for forecasting.
         """
-
+    
         df_copy = df.copy() 
-
+    
         # Standardize datetime indexing for consistent time series analysis
         if not isinstance(df_copy.index, pd.DatetimeIndex):
             df_copy['date'] = pd.to_datetime(df_copy['date'])
             df_copy = df_copy.set_index('date') 
-
+    
         # Extract calendar-based features for seasonal pattern identification
         df_copy['dayofweek'] = df_copy.index.dayofweek
         df_copy['quarter'] = df_copy.index.quarter
@@ -192,14 +195,14 @@ class DataProcessor:
         df_copy['dayofyear'] = df_copy.index.dayofyear
         df_copy['dayofmonth'] = df_copy.index.day
         df_copy['weekofyear'] = df_copy.index.isocalendar().week    
-
+    
         if 'date' in df_copy.columns:
             df_copy = df_copy.drop(columns=['date'])    
-
+    
         # Create lagged features for historical reference points
         for lag in lags:
             df_copy[f'lag_{lag}'] = df_copy[target_col].shift(lag)  
-
+    
         # Generate lag ratio features using sorted lags to ensure consistent progression
         if lagged_ratios == True:
             sorted_lags = sorted(lags)
@@ -212,30 +215,50 @@ class DataProcessor:
         
         # Drop rows where lagged features or lagged ratios are NaN
         if lagged_features or lagged_ratios:
-        # Columns to check for NaN values
             columns_to_check = [f'lag_{lag}' for lag in lags] if lagged_features else []
-            #if lagged_ratios:
-            #    columns_to_check += [f'lag_ratio_{sorted_lags[i]}_{sorted_lags[i + 1]}' for i in range(len(sorted_lags) - 1)]
-        
-        # Drop rows with NaN values in any of the specified columns
-        df_copy = df_copy.dropna(subset=columns_to_check)
-
+            df_copy = df_copy.dropna(subset=columns_to_check)
+    
         # Drop lagged features if not needed
         if lagged_features == False:
             for lag in lags:
                 df_copy = df_copy.drop(f'lag_{lag}', axis=1)    
-
+    
         # Create trend-based features if enabled
         if trend_indicators == True:
             # Implement adaptive trend indicators - Exponentially Weighted Moving Average (EWMA)
             for span in windows:
                 df_copy[f'ewma_{span}d'] = df_copy[target_col].shift(1).ewm(span=span).mean()   
-
+    
             # Implement acceleration indicator for short-term directional changes
             df_copy['acceleration_3d'] = df_copy[target_col].shift(1).diff(3) - df_copy[target_col].shift(2).diff(3) 
- 
-        
-        return df_copy
+    
+        # Create Fourier terms for capturing cyclical patterns
+        if fourier_terms == True:
+            # Assuming daily data, use a period of 365 days for annual seasonality
+            annual_period = 365
+            weekly_period = 7
+            time = np.arange(len(df_copy))
+
+            # Annual Fourier terms
+            for i in range(1, 5):  # Create first four annual Fourier terms
+                df_copy[f'annual_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / annual_period)
+                df_copy[f'annual_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / annual_period)
+
+            # Weekly Fourier terms
+            for i in range(1, 3):  # Create first two weekly Fourier terms
+                df_copy[f'weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / weekly_period)
+                df_copy[f'weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / weekly_period)
+    
+        # Create interaction terms between existing features
+        if interaction_terms == True:
+            df_copy['month_dayofweek'] = df_copy['month'] * df_copy['dayofweek']
+            df_copy['quarter_dayofweek'] = df_copy['quarter'] * df_copy['dayofweek']
+    
+        # Include a linear trend term
+        if trend_term == True:
+            df_copy['trend'] = np.arange(len(df_copy))
+    
+        return df_copy 
 
     def arriavl_time(self, company = "", by_company = False, agg_arrival = False, agg_value = ""):
         """

@@ -90,7 +90,7 @@ class CatBoostParams:
                 "depth": 3,                # Translated from max_depth
                 "min_data_in_leaf": 10,    # Approximate from min_child_weight
                 "iterations": 80,          # Translated from n_estimators
-                "l1_leaf_reg": 0.5,        # Translated from reg_alpha
+                #"l1_leaf_reg": 0.5,        # Translated from reg_alpha
                 "verbose": False
             },
             "GreenWaste Solutions": {
@@ -99,7 +99,7 @@ class CatBoostParams:
                 "depth": 6,
                 "min_data_in_leaf": 5,     # Approximate from min_child_weight
                 "iterations": 70,
-                "l1_leaf_reg": 0.1,
+                #"l1_leaf_reg": 0.1,
                 "verbose": False
             },
             "IndustrialProcess Ltd": {
@@ -108,7 +108,7 @@ class CatBoostParams:
                 "depth": 4,
                 "min_data_in_leaf": 15,    # Approximate from min_child_weight
                 "iterations": 70,
-                "l1_leaf_reg": 0,
+                #"l1_leaf_reg": 0,
                 "verbose": False
             },
             "BuildRight Construction": {
@@ -117,7 +117,7 @@ class CatBoostParams:
                 "depth": 3,
                 "min_data_in_leaf": 5,     # Approximate from min_child_weight
                 "iterations": 90,
-                "l1_leaf_reg": 0.5,
+                #"l1_leaf_reg": 0.5,
                 "verbose": False
             },
             "CommercialServices Inc": {
@@ -126,8 +126,8 @@ class CatBoostParams:
                 "depth": 5,
                 "min_data_in_leaf": 15,    # Approximate from min_child_weight
                 "iterations": 130,
-                "l1_leaf_reg": 0.1,
-                "l2_leaf_reg": 0.3,        # Approximated from gamma
+                #"l1_leaf_reg": 0.1,
+                #"l2_leaf_reg": 0.3,        # Approximated from gamma
                 "verbose": False
             },
             "MunicipalWaste Co": {
@@ -136,7 +136,7 @@ class CatBoostParams:
                 "depth": 4,
                 "min_data_in_leaf": 15,    # Approximate from min_child_weight
                 "iterations": 100,
-                "l1_leaf_reg": 0.5,
+                #"l1_leaf_reg": 0.5,
                 "verbose": False
             }
         }
