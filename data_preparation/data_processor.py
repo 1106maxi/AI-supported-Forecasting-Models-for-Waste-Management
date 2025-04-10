@@ -158,7 +158,7 @@ class DataProcessor:
 
     
     
-    def create_xgboost_features(self, df, target_col='quantity_tons', lags=[1], windows=[], lagged_features=True, lagged_ratios=True, trend_indicators=False, fourier_terms=False, interaction_terms=False, trend_term=False):
+    def create_xgboost_features(self, df, waste_type = "" ,target_col='quantity_tons', lags=[1], windows=[], lagged_features=True, lagged_ratios=True, trend_indicators=False, fourier_terms=False, interaction_terms=False, trend_term=False):
         """
         Creates comprehensive time series features for machine learning models, particularly XGBoost, by incorporating
         historical, seasonal, and trend-based information.  
@@ -234,30 +234,74 @@ class DataProcessor:
     
         # Create Fourier terms for capturing cyclical patterns
         if fourier_terms == True:
-            # Assuming daily data, use a period of 365 days for annual seasonality
-            annual_period = 365
-            weekly_period = 7
+            annual_period = 365.33
+            weekly_period = 7.0
+            semi_weekly_period = 3.50
+            industrial_period = 2
             time = np.arange(len(df_copy))
 
-            # Annual Fourier terms
-            for i in range(1, 5):  # Create first four annual Fourier terms
-                df_copy[f'annual_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / annual_period)
-                df_copy[f'annual_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / annual_period)
+            if waste_type == 'Municipal':
+                # Annual Fourier terms
+                for i in range(1, 7):
+                    df_copy[f'annual_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / annual_period)
+                    df_copy[f'annual_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / annual_period)
 
-            # Weekly Fourier terms
-            for i in range(1, 3):  # Create first two weekly Fourier terms
+                # Weekly Fourier terms
+                for i in range(1, 3):
+                    df_copy[f'weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / weekly_period)
+                    df_copy[f'weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / weekly_period)
+
+                # Semi-weekly Fourier terms
+                for i in range(1, 3):
+                    df_copy[f'semi_weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / semi_weekly_period)
+                    df_copy[f'semi_weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / semi_weekly_period)
+
+            elif waste_type == 'Industrial':
+                # Industrial-specific Fourier terms
+                for i in range(1, 3):
+                    df_copy[f'industrial_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / industrial_period)
+                    df_copy[f'industrial_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / industrial_period)
+
+                # Weekly Fourier terms
                 df_copy[f'weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / weekly_period)
                 df_copy[f'weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / weekly_period)
-    
+
+            elif waste_type == 'Organic':
+                # Annual Fourier terms
+                for i in range(1, 7):
+                    df_copy[f'annual_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / annual_period)
+                    df_copy[f'annual_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / annual_period)
+
+            elif waste_type == 'Construction':
+                # Annual Fourier terms
+                for i in range(1, 7):
+                    df_copy[f'annual_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / annual_period)
+                    df_copy[f'annual_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / annual_period)
+
+                # Semi-weekly Fourier terms
+                for i in range(1, 3):
+                    df_copy[f'semi_weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / semi_weekly_period)
+                    df_copy[f'semi_weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / semi_weekly_period)
+
+            elif waste_type == 'Commercial':
+                # Weekly Fourier terms
+                for i in range(1, 3):
+                    df_copy[f'weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / weekly_period)
+                    df_copy[f'weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / weekly_period)
+
+                # Semi-weekly Fourier terms
+                for i in range(1, 3):
+                    df_copy[f'semi_weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / semi_weekly_period)
+                    df_copy[f'semi_weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / semi_weekly_period)
+
         # Create interaction terms between existing features
         if interaction_terms == True:
             df_copy['month_dayofweek'] = df_copy['month'] * df_copy['dayofweek']
             df_copy['quarter_dayofweek'] = df_copy['quarter'] * df_copy['dayofweek']
-    
         # Include a linear trend term
         if trend_term == True:
             df_copy['trend'] = np.arange(len(df_copy))
-    
+            
         return df_copy 
 
     def arriavl_time(self, company = "", by_company = False, agg_arrival = False, agg_value = ""):
