@@ -369,8 +369,12 @@ class DataProcessor:
             'dayofyear': 'first',
             'dayofmonth': 'first',
             'weekofyear': 'first',
-            'hour': lambda x: (x.iloc[0] // agg_value) * agg_value, 
+            #'hour': lambda x: (x.iloc[0] // agg_value) * agg_value, 
             'day_of_week': 'first'})
+            
+            final_df = final_df.reset_index()
+            final_df['hour'] = final_df["arrival_time"].dt.hour + final_df['arrival_time'].dt.minute / 60
+            final_df = final_df.set_index("arrival_time")
 
         final_df = final_df.astype(np.float32)
 
