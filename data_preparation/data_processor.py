@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-
 class DataProcessor:
     """
     A class to fetch and prepare waste data for analysis.
@@ -241,58 +240,49 @@ class DataProcessor:
             time = np.arange(len(df_copy))
 
             if waste_type == 'Municipal':
-                # Annual Fourier terms
-                for i in range(1, 7):
-                    df_copy[f'annual_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / annual_period)
-                    df_copy[f'annual_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / annual_period)
+                
+                df_copy[f'annual_fourier_sin'] = np.sin(2 * np.pi * time / annual_period)
+                df_copy[f'annual_fourier_cos'] = np.cos(2 * np.pi * time / annual_period)
 
                 # Weekly Fourier terms
-                for i in range(1, 3):
-                    df_copy[f'weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / weekly_period)
-                    df_copy[f'weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / weekly_period)
+                df_copy[f'weekly_fourier_sin'] = np.sin(2 * np.pi * time / weekly_period)
+                df_copy[f'weekly_fourier_cos'] = np.cos(2 * np.pi * time / weekly_period)
 
                 # Semi-weekly Fourier terms
-                for i in range(1, 3):
-                    df_copy[f'semi_weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / semi_weekly_period)
-                    df_copy[f'semi_weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / semi_weekly_period)
+                df_copy[f'semi_weekly_fourier_sin'] = np.sin(2 * np.pi * time / semi_weekly_period)
+                df_copy[f'semi_weekly_fourier_cos'] = np.cos(2 * np.pi * time / semi_weekly_period)
 
             elif waste_type == 'Industrial':
                 # Industrial-specific Fourier terms
-                for i in range(1, 3):
-                    df_copy[f'industrial_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / industrial_period)
-                    df_copy[f'industrial_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / industrial_period)
+                df_copy[f'industrial_fourier_sin'] = np.sin(2 * np.pi * time / industrial_period)
+                df_copy[f'industrial_fourier_cos'] = np.cos(2 * np.pi * time / industrial_period)
 
                 # Weekly Fourier terms
-                df_copy[f'weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / weekly_period)
-                df_copy[f'weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / weekly_period)
+                df_copy[f'weekly_fourier_sin'] = np.sin(2 * np.pi * time / weekly_period)
+                df_copy[f'weekly_fourier_cos'] = np.cos(2 * np.pi * time / weekly_period)
 
             elif waste_type == 'Organic':
                 # Annual Fourier terms
-                for i in range(1, 7):
-                    df_copy[f'annual_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / annual_period)
-                    df_copy[f'annual_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / annual_period)
+                df_copy[f'annual_fourier_sin'] = np.sin(2 * np.pi * time / annual_period)
+                df_copy[f'annual_fourier_cos'] = np.cos(2 * np.pi * time / annual_period)
 
             elif waste_type == 'Construction':
                 # Annual Fourier terms
-                for i in range(1, 7):
-                    df_copy[f'annual_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / annual_period)
-                    df_copy[f'annual_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / annual_period)
+                df_copy[f'annual_fourier_sin'] = np.sin(2 * np.pi * time / annual_period)
+                df_copy[f'annual_fourier_cos'] = np.cos(2 * np.pi * time / annual_period)
 
                 # Semi-weekly Fourier terms
-                for i in range(1, 3):
-                    df_copy[f'semi_weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / semi_weekly_period)
-                    df_copy[f'semi_weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / semi_weekly_period)
+                df_copy[f'semi_weekly_fourier_sin'] = np.sin(2 * np.pi * time / semi_weekly_period)
+                df_copy[f'semi_weekly_fourier_cos'] = np.cos(2 * np.pi * time / semi_weekly_period)
 
             elif waste_type == 'Commercial':
                 # Weekly Fourier terms
-                for i in range(1, 3):
-                    df_copy[f'weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / weekly_period)
-                    df_copy[f'weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / weekly_period)
+                df_copy[f'weekly_fourier_sin'] = np.sin(2 * np.pi * time / weekly_period)
+                df_copy[f'weekly_fourier_cos'] = np.cos(2 * np.pi * time / weekly_period)
 
                 # Semi-weekly Fourier terms
-                for i in range(1, 3):
-                    df_copy[f'semi_weekly_fourier_sin_{i}'] = np.sin(2 * np.pi * i * time / semi_weekly_period)
-                    df_copy[f'semi_weekly_fourier_cos_{i}'] = np.cos(2 * np.pi * i * time / semi_weekly_period)
+                df_copy[f'semi_weekly_fourier_sin'] = np.sin(2 * np.pi * time / semi_weekly_period)
+                df_copy[f'semi_weekly_fourier_cos'] = np.cos(2 * np.pi * time / semi_weekly_period)
 
         # Create interaction terms between existing features
         if interaction_terms == True:
@@ -301,7 +291,7 @@ class DataProcessor:
         # Include a linear trend term
         if trend_term == True:
             df_copy['trend'] = np.arange(len(df_copy))
-            
+        
         return df_copy 
 
     def arriavl_time(self, company = "", by_company = False, agg_arrival = False, agg_value = ""):
