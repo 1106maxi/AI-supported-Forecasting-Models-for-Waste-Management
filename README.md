@@ -1,48 +1,47 @@
 # AI-supported Forecasting Models for Waste Management and Resource Planning
 
-This project develops a forecasting system to optimize waste processing in waste incineration plants. The system predicts arrival times, quantities, and quality scores of waste, considering seasonal fluctuations and other characteristics. It aims to enable more efficient resource planning in disposal facilities and improve processing procedures.
+Modern waste incineration plants play a vital role in sustainable waste management by reducing volume and recovering energy. However, due to the heterogeneous nature of waste, fluctuations in fuel quality can lead to operational inefficiencies, increased auxiliary fuel use, and higher emissions.
+
+To ensure stable combustion, reduce costs, and meet regulatory standards (e.g., EU Directive 2010/75/EC), accurate forecasting of key input variables—such as waste quantity, quality, and delivery timing—is essential.
+
+This repository contains the code for my seminar project, which explores AI-based forecasting methods for waste incineration plant operations using a synthetic dataset derived from real-world process data.
+
+**Main goals:**
+- Forecast daily waste quantities using Facebook Prophet and tree-based models (primarily XGBoost)
+- Identify effective feature sets and model structures (e.g., AR, NAR, ARR)
+- Compare models with baseline approaches like Holt-Winters and validate results
+
+While the seminar paper focused on **waste quantity forecasting**, this repository includes supporting analysis and experiments for all three targets: **quantity, quality, and arrival time**.
 
 ## Project Structure
 
-### Notebooks
-
-#### Data Examination Notebooks
-Explore trends, seasonality, and statistics in waste data to inform feature engineering.
-- `arrival_time.ipynb`: Analysis of waste arrival times.
-- `quantity.ipynb`: Descriptive analysis of the quantity of delivered waste.
-- `quality.ipynb`: Analysis of the quality scores per delivery.
-
-#### Forecasting Notebooks
-Develop and test forecasting models.
-- `arrival_time.ipynb`: Forecast the arrival times of waste deliveries.
-- `quantity_xgboost.ipynb`: Forecast waste quantities using the XGBoost algorithm.
-- `quality_regression_test.ipynb`: Regression tests for quality score predictions.
-- `quantity_residual_analysis_company.ipynb`: Analysis of residuals for quantity forecasting per company using XGBoost.
-- `quantity_residual_analysis_waste_type.ipynb`: Analysis of residuals for quantity forecasting per waste type using XGBoost.
-- `forecasting_system.ipynb`: Integrates various forecasting models for comprehensive analysis.
-
-#### Implementation Tests
-Test new features and forecasting methods.
-- `test_prediction_intervals.ipynb`: Test conformal prediction .
-- `test_prophet.ipynb`: Test the Facebook Prophet model for forecasting.
-- `test_darts.ipynb`: Test GRUs for forecasting using the Darts library.
-- `test_difference.ipynb`: Test the effect of making time series data stationary on forecasting performance for XGBoost.
-
-### Modules
-
-#### Data Preparation
-Contains tools for preparing data for forecasting tasks.
-- `data_processor.py`: Includes functions for data cleaning, preprocessing, and feature extraction.
-
-### Models
-
-#### Hyperparameter Search Results
-Contains results and configurations for various models.
-- `hyperparameters.py`: Details of hyperparameter tuning for the XGBoost model.
+```
+├── data_exploration/                         
+│   ├── arrival_time_analysis.ipynb           # EDA for arrival time data  (not included in seminar paper)
+│   ├── quality_analysis.ipynb                # EDA for waste quality data (not included in seminar paper)
+│   └── quantity_analysis.ipynb               # EDA for waste quantity data 
+│
+├── data_preparation/                         
+│   ├── __init__.py                           
+│   └── data_processor.py                     # Core module with data handling and feature creation logic
+│
+├── forecasting/                              
+│   ├── prophet_predictions/                  
+│   │   ├── test_set1_predictions.csv         # Prophet forecast results for comparison (used in DM test)
+│   │   └── test_set2_predictions.csv         
+│   │
+│   ├── xgb_hyperparameters/                  # Best hyperparameters for the XGBoost models
+│   │
+│   ├── gbt_arrival_time_forecast.ipynb       # XGBoost/CatBoost for arrival time prediction (not included in seminar paper)
+│   ├── hyperparameter_tuning.ipynb           # Hyperparameter tuning with Optuna 
+│   ├── prophet_quantity_forecast.ipynb       # Facebook Prophet model for waste quantity
+│   ├── xgb_xgb_qualityscore_forecast.ipynb   # XGBoost for waste quality score prediction (not included in seminar paper)
+│   └── xgb_quantity_forecast.ipynb           # XGBoost models (NAR, AR, ARR), Holt-Winters baseline, DM test
+```
 
 ## Prerequisites
 
-- **Python Version**: This project was built using Python 3.12.4. Please ensure you have this version installed before setting up the project environment.
+- **Python Version**: This project was built using Python 3.12.4.
 
 ## Installation
 

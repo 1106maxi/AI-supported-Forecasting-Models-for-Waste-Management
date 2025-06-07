@@ -1,0 +1,45 @@
+Commercial:
+  alpha: 0.1576574486865191
+  colsample_bytree: 0.7680221683799232
+  lambda: 5.1197734545051965
+  learning_rate: 0.012896549804538235
+  max_depth: 5
+  min_child_weight: 2
+  n_estimators: 355
+  subsample: 0.7264151081796374
+Construction:
+  alpha: 0.001565561087917492
+  colsample_bytree: 0.648312911516109
+  lambda: 0.06056424320262292
+  learning_rate: 0.08669784208505202
+  max_depth: 3
+  min_child_weight: 5
+  n_estimators: 154
+  subsample: 0.9903934477231253
+Industrial:
+  alpha: 0.0014070041494897115
+  colsample_bytree: 0.5512793138175649
+  lambda: 0.002821226977419814
+  learning_rate: 0.03859244598594698
+  max_depth: 7
+  min_child_weight: 8
+  n_estimators: 101
+  subsample: 0.9138564923661057
+Municipal:
+  alpha: 0.4715264550541497
+  colsample_bytree: 0.5999192011944393
+  lambda: 1.3084776104797622
+  learning_rate: 0.06471045406782258
+  max_depth: 3
+  min_child_weight: 4
+  n_estimators: 152
+  subsample: 0.6328964936856417
+Organic:
+  alpha: 4.395816420105612
+  colsample_bytree: 0.5232431639081302
+  lambda: 0.0020143599934621718
+  learning_rate: 0.012468525853141094
+  max_depth: 4
+  min_child_weight: 5
+  n_estimators: 418
+  subsample: 0.9288286180407345

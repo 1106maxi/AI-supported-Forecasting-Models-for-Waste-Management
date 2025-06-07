@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 
 class DataProcessor:
     """
@@ -13,11 +12,11 @@ class DataProcessor:
 
     # Define base holidays
     holidays_base = [
-        '2022-01-01',  # New Year
+        '2022-01-01', '2022-01-02', '2022-01-03', '2022-01-04',  # New Year
         '2022-12-23', '2022-12-24', '2022-12-25', '2022-12-26', '2022-12-27', '2022-12-28',  # Christmas time
-        '2023-01-01',  # New Year
+        '2023-01-01','2023-01-02', '2023-01-03', '2023-01-04',  # New Year
         '2023-12-23', '2023-12-24', '2023-12-25', '2023-12-26', '2023-12-27', '2023-12-28',  # Christmas time
-        '2024-01-01',  # New Year
+        '2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04',  # New Year
         '2024-12-23', '2024-12-24', '2024-12-25', '2024-12-26', '2024-12-27', '2024-12-28',  # Christmas time
     ]
 
@@ -369,51 +368,3 @@ class DataProcessor:
         final_df = final_df.astype(np.float32)
 
         return final_df
-
-    def gru_prepare_quantity_tons_by_waste_type(self, waste_type, timesteps=7):
-        """
-        Prepare the data for a GRU model by creating sequences and normalizing the data.
-
-        Args:
-            waste_type (str): The type of waste to filter the data for.
-            timesteps (int): The number of timesteps for the GRU model.
-
-        Returns:
-            tuple: A tuple containing:
-                - X_train_gru (np.array): Training sequences.
-                - y_train_gru (np.array): Training targets.
-                - X_test_gru (np.array): Test sequences.
-                - y_test_gru (np.array): Test targets.
-                - scaler (MinMaxScaler): The scaler used to normalize the data.
-        """
-        # Filter data for the specified waste type
-        df = self.waste_data[self.waste_data['waste_type'] == waste_type].copy()
-
-        # Convert 'date' to datetime and sort
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values('date')
-
-        # Extract the target variable
-        y = df['quantity_tons'].values
-
-        # Train-test split
-        split_index = int(len(df) * 0.8)
-        y_train, y_test = y[:split_index], y[split_index:]
-
-        # Normalize the data
-        scaler = MinMaxScaler()
-        y_train_scaled = scaler.fit_transform(y_train.reshape(-1, 1))
-        y_test_scaled = scaler.transform(y_test.reshape(-1, 1))
-
-        # Create sequences
-        def create_sequences(data, timesteps):
-            X, y = [], []
-            for i in range(len(data) - timesteps):
-                X.append(data[i:i + timesteps])
-                y.append(data[i + timesteps])
-            return np.array(X), np.array(y)
-
-        X_train_gru, y_train_gru = create_sequences(y_train_scaled, timesteps)
-        X_test_gru, y_test_gru = create_sequences(y_test_scaled, timesteps)
-
-        return X_train_gru, y_train_gru, X_test_gru, y_test_gru, scaler
