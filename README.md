@@ -2,12 +2,12 @@
 
 Modern waste incineration plants play a vital role in sustainable waste management by reducing volume and recovering energy. However, due to the heterogeneous nature of waste, fluctuations in fuel quality can lead to operational inefficiencies, increased auxiliary fuel use, and higher emissions.
 
-To ensure stable combustion, reduce costs, and meet regulatory standards (e.g., EU Directive 2010/75/EC), accurate forecasting of key input variables—such as waste quantity, quality, and delivery timing—is essential.
+To ensure stable combustion, reduce costs, and meet regulatory standards (e.g., EU Directive 2010/75/EC), accurate forecasting of key input variables, such as waste quantity, quality, and delivery timing, is essential.
 
 This repository contains the code for my seminar project, which explores AI-based forecasting methods for waste incineration plant operations using a synthetic dataset derived from real-world process data.
 
 **Main goals:**
-- Forecast daily waste quantities using Facebook Prophet and tree-based models (primarily XGBoost)
+- Forecast daily waste quantities using Facebook Prophet and XGBoost
 - Identify effective feature sets and model structures (e.g., AR, NAR, ARR)
 - Compare models with baseline approaches like Holt-Winters and validate results
 
